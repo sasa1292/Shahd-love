@@ -328,19 +328,19 @@
         <div class="card" id="music">
             <div class="section-title">Vibes 🎧✨</div>
             <ul class="music-list">
-                <li class="song-item" onclick="playSong('https://g.top4top.io/m_36507j7lw0.mp3')">
+                <li class="song-item" onclick="playSpecificSong(1)">
                     <div class="song-info"><h4>❤️✨🔥</h4></div>
                     <div class="play-icon">▶</div>
                 </li>
-                <li class="song-item" onclick="playSong('https://e.top4top.io/m_3650c5stg0.mp3')">
+                <li class="song-item" onclick="playSpecificSong(2)">
                     <div class="song-info"><h4>🥺🍯💍</h4></div>
                     <div class="play-icon">▶</div>
                 </li>
-                <li class="song-item" onclick="playSong('https://j.top4top.io/m_3650qtyt70.mp3')">
+                <li class="song-item" onclick="playSpecificSong(3)">
                     <div class="song-info"><h4>🫂🌎🌸</h4></div>
                     <div class="play-icon">▶</div>
                 </li>
-                <li class="song-item" onclick="playSong('https://b.top4top.io/m_3650yaltj0.mp3')">
+                <li class="song-item" onclick="playSpecificSong(4)">
                     <div class="song-info"><h4>💃🥰🎶</h4></div>
                     <div class="play-icon">▶</div>
                 </li>
@@ -368,11 +368,7 @@
         </div>
     </div>
 
-    <audio id="bg-music" loop>
-        <source src="https://b.top4top.io/m_3650brh0f1.mp3" type="audio/mpeg">
-    </audio>
-
-    <audio id="player-music"></audio>
+    <audio id="bg-music"></audio>
 
     <div class="bg-music-control" onclick="toggleBgMusic()" id="musicBtn">
         🎵
@@ -389,9 +385,8 @@
                     document.getElementById('main-app').style.display = 'block';
                     document.getElementById('musicBtn').style.display = 'block';
                     
-                    var bgAudio = document.getElementById("bg-music");
-                    bgAudio.volume = 0.5;
-                    bgAudio.play().catch(e => console.log("Audio play failed"));
+                    // بدء تشغيل البلاي ليست من أول أغنية
+                    playSpecificSong(0); 
                 }, 500);
             } else {
                 var err = document.getElementById('error-msg');
@@ -418,64 +413,75 @@
             `;
         }, 1000);
 
-        // --- 3. إدارة الصوت والفيديو (الحل النهائي لتداخل الأصوات) ---
-        var bgMusic = document.getElementById("bg-music");
-        var player = document.getElementById("player-music");
+        // --- 3. نظام البلاي ليست (Playlist System) ---
+        
+        // قائمة الأغاني (الأولى هي أغنية الخلفية)
+        const playlist = [
+            "https://b.top4top.io/m_3650brh0f1.mp3", // الأغنية الأساسية (الجديدة)
+            "https://g.top4top.io/m_36507j7lw0.mp3", // أغاني القائمة
+            "https://e.top4top.io/m_3650c5stg0.mp3",
+            "https://j.top4top.io/m_3650qtyt70.mp3",
+            "https://b.top4top.io/m_3650yaltj0.mp3"
+        ];
+
+        let currentTrackIndex = 0;
+        const bgMusic = document.getElementById("bg-music");
         const allVideos = document.querySelectorAll('video');
 
         // دالة لوقف كل الفيديوهات
-        function pauseAllVideos() {
-            allVideos.forEach(video => video.pause());
+        function stopAllVideos() {
+            allVideos.forEach(v => v.pause());
         }
 
-        // تشغيل أغنية من القائمة
-        function playSong(url) {
-            bgMusic.pause(); // وقف الخلفية
-            pauseAllVideos(); // وقف أي فيديو شغال
-            player.src = url;
-            player.play();
-            player.onended = function() {
-                bgMusic.play();
-            };
+        // تشغيل أغنية محددة (بالرقم)
+        function playSpecificSong(index) {
+            stopAllVideos(); // وقف أي فيديو شغال
+            currentTrackIndex = index;
+            bgMusic.src = playlist[currentTrackIndex];
+            bgMusic.play().catch(e => console.log("Auto-play prevented"));
         }
+
+        // لما الأغنية تخلص، شغل اللي بعدها أوتوماتيك
+        bgMusic.addEventListener('ended', () => {
+            currentTrackIndex++;
+            // لو وصلنا لآخر أغنية، نعيد من الأول
+            if (currentTrackIndex >= playlist.length) {
+                currentTrackIndex = 0;
+            }
+            bgMusic.src = playlist[currentTrackIndex];
+            bgMusic.play();
+        });
 
         // زر التحكم العائم
         function toggleBgMusic() {
             if (bgMusic.paused) {
-                pauseAllVideos(); // لو هنشغل الخلفية نوقف الفيديوهات
-                player.pause();
+                stopAllVideos();
                 bgMusic.play();
             } else {
                 bgMusic.pause();
             }
         }
 
-        // عند تشغيل أي فيديو
+        // إدارة الفيديوهات (توقف الموسيقى عند التشغيل)
         allVideos.forEach(video => {
             video.addEventListener('play', () => {
-                bgMusic.pause(); // وقف الخلفية
-                player.pause();  // وقف الأغاني
+                bgMusic.pause(); // وقف البلاي ليست
                 // وقف الفيديوهات التانية
                 allVideos.forEach(otherVideo => {
                     if (otherVideo !== video) otherVideo.pause();
                 });
             });
-            video.addEventListener('ended', () => {
-                bgMusic.play(); // رجع الخلفية لما يخلص
-            });
+            // (اختياري) لما الفيديو يخلص، ممكن نرجع نشغل الموسيقى لو حابب، بس كده أحسن عشان متتخضش
         });
 
-        // --- 4. القلوب واسم شهد المتساقط ---
+        // --- 4. القلوب واسم شهد ---
         function createFallingElement() {
             const element = document.createElement('div');
             element.classList.add('falling-element');
-            
-            // اختيار عشوائي بين قلب، نجمة، واسم شهد
             const shapes = ['❤️', '✨', 'Shahd', '💖'];
             const randomShape = shapes[Math.floor(Math.random() * shapes.length)];
             element.innerHTML = randomShape;
 
-            // تنسيق مختلف للاسم
             if (randomShape === 'Shahd') {
                 element.style.fontSize = (Math.random() * 15 + 15) + 'px';
                 element.style.fontWeight = 'bold';
@@ -485,18 +491,14 @@
                 element.style.fontSize = (Math.random() * 20 + 10) + 'px';
                 element.style.color = Math.random() > 0.5 ? '#ff4d6d' : '#ff8fa3';
             }
-            
             element.style.left = Math.random() * 100 + 'vw';
             element.style.animationDuration = Math.random() * 3 + 4 + 's';
-            
             document.body.appendChild(element);
             setTimeout(() => element.remove(), 7000);
         }
         setInterval(createFallingElement, 400);
 
-        // --- 5. زرار ليه بحبك (نظام عدم التكرار الذكي) ---
-        
-        // القائمة الكبيرة للرسائل
+        // --- 5. زرار ليه بحبك (نظام عدم التكرار) ---
         const loveMessages = [
             "عشان ضحكتك بتنور يومي كله ✨",
             "عشان عندك أطيب قلب في الدنيا دي 💖",
@@ -504,7 +506,7 @@
             "عشان وجودك هو أحلى نعمة في حياتي 🤲",
             "عشان عيونك فيها سحر مش طبيعي 👀❤️",
             "ببساطة.. عشان إنتي شهد! 👑",
-            "عشان أنتي أجمل حاجة حصلتلي في 2025 🤍",
+            "عشان أنتي أجمل حاجة حصلتلي في 2020 🤍",
             "عشان دايماً في ضهري وبتشجعيني 💪",
             "عشان رقتك وطيبتك ملهمش زي 🌸",
             "عشان أنا من غيرك ولا حاجة 🌍",
@@ -530,23 +532,15 @@
             "عشان إنتي شهد.. وكفاية الاسم ده لوحده سكر 🍯"
         ];
 
-        // مصفوفة لتتبع الرسائل المتاحة
         let availableMessages = [...loveMessages];
 
         function showLoveReason() {
-            // لو الرسائل خلصت، نعيد تعبئة القائمة من جديد
             if (availableMessages.length === 0) {
                 availableMessages = [...loveMessages];
             }
-
-            // اختيار رسالة عشوائية من القائمة المتاحة
             const randomIndex = Math.floor(Math.random() * availableMessages.length);
             const selectedMessage = availableMessages[randomIndex];
-
-            // حذف الرسالة المختارة عشان متظهرش تاني
             availableMessages.splice(randomIndex, 1);
-
-            // عرض الرسالة
             document.getElementById('popup-text').textContent = selectedMessage;
             document.getElementById('love-popup').style.display = 'flex';
         }
